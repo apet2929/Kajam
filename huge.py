@@ -1,129 +1,170 @@
 import pygame
-import random
+from enum import Enum
+import pygame.rect
+from pygame.rect import Rect
+import pygame.event
 import pygame.draw
+from pygame.surface import Surface
+import pygame.freetype
+from pygame.font import *
+from pygame.sprite import RenderUpdates
+
+class GameState(Enum):
+    QUIT = -1
+    TITLE = 0
+    NEWGAME = 1
+    NEXT_LEVEL = 2
+    CUTSCENE = 3
+    NEXT_LINE = 4
+    RETURN = 5
+    MAP = 6
+
+
+class UIElement(pygame.sprite.Sprite):
+
+    def __init__(self, center_position, text, font_size, bg_rgb, text_rgb, action=None):
+        super().__init__()
+
+        self.mouse_over = False
+
+        default_image = create_surface_with_text(
+            text, font_size, text_rgb, bg_rgb)
+
+        highlighted_image = create_surface_with_text(
+            text, font_size * 1.2, text_rgb, bg_rgb)
+
+        self.images = [default_image, highlighted_image]
+        self.rects = [
+            default_image.get_rect(center=center_position),
+            highlighted_image.get_rect(center=center_position)]
+
+        self.action = action
+
+    @property
+    def image(self):
+        return self.images[1] if self.mouse_over else self.images[0]
+
+    @property
+    def rect(self):
+        return self.rects[1] if self.mouse_over else self.rects[0]
+
+    def update(self, mouse_pos, mouse_up):
+        if self.rect.collidepoint(mouse_pos):
+            self.mouse_over = True
+            if mouse_up:
+                return self.action
+        else:
+            self.mouse_over = False
+
+
+def clamp(value, min, max):
+    if value < min:
+        return min
+    elif value > max:
+        return max
+    else:
+        return value
+
+def create_surface_with_text(text, font_size, text_rgb, bg_rgb=None) -> Surface:
+    font = pygame.freetype.SysFont("Courier", font_size, bold=True)
+    surface, _ = font.render(text=text, fgcolor=text_rgb, bgcolor=bg_rgb)
+    return surface.convert_alpha()
+
+
+
+def game_loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:Surface=None):
+    # Handles game loop until an action is return by a button in the buttons sprite renderer.
+    running = True
+    while running:
+        mouse_up = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return GameState.QUIT
+
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                mouse_up = True
+
+        screen.fill((0, 0, 255))
+        if img is not None:
+            screen.blit(img, (0, 0))
+
+        for button in buttons:
+            ui_action = button.update(pygame.mouse.get_pos(), mouse_up)
+            if ui_action is not None:
+                return ui_action
+
+        buttons.draw(screen)
+
+        if text is not None and pos is not None:
+            drawText(screen, text, (0,0,255), pos, font, True)
+    
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+# draw some text into an area of a surface
+# automatically wraps words
+# returns any text that didn't get blitted
+def drawText(surface, text, color, rect, font, aa=False, bkg=None):
+    rect = Rect(rect)
+    y = rect.top
+    lineSpacing = -2
+
+    # get the height of the font
+    fontHeight = font.size("Tg")[1]
+
+    while text:
+        i = 1
+
+        # determine if the row of text will be outside our area
+        if y + fontHeight > rect.bottom:
+            break
+
+        # determine maximum width of line
+        while font.size(text[:i])[0] < rect.width and i < len(text):
+            i += 1
+
+        # if we've wrapped the text, then adjust the wrap to the last word      
+        if i < len(text): 
+            i = text.rfind(" ", 0, i) + 1
+
+        # render the line and blit it to the surface
+        if bkg:
+            image = font.render(text[:i], 1, color, bkg)
+            image.set_colorkey(bkg)
+        else:
+            image = font.render(text[:i], aa, color)
+
+        surface.blit(image, (rect.left, y))
+        y += fontHeight + lineSpacing
+
+        # remove the text we just blitted
+        text = text[i:]
+
+    return text
+
+def main():
+    game_state = GameState.TITLE
+    
+    if game_state == GameState.QUIT:
+            running = False
+
+    buttons = RenderUpdates(
+        UIElement((100,100), "Yee", 25, (0,0,255), (0,0,0), GameState.QUIT)
+    )
+
+    game_loop(buttons)
+
+
+#  Constant Variables
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 1000
+
+FPS = 60
+clock = pygame.time.Clock()
 
 pygame.init()
-
-
-#Init Vars
-WIDTH = 800
-HEIGHT = 600
-screen = pygame.display.set_mode([WIDTH,HEIGHT], pygame.RESIZABLE)
-FPS = 10
-fpsClock = pygame.time.Clock()
-global state
-state = 0
-subState = 0
-
-txtCol = 1
-col1 = 1
-
-def menuState():
-    global start
-    screen.fill((180, 50, 50))
-    Text("Save Hooman", WIDTH/15, (255,255,255), (255,255,255), True, 0, HEIGHT/4)
-    start = Button(pygame.Rect(WIDTH/2 - WIDTH/8, HEIGHT/2, WIDTH/4, HEIGHT/6), "Start", WIDTH/20, (255,0,0), (100,0,90), (255,255,255), 40)
-
-def menuStateInput(event):
-    global state
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        if start.checkClick():
-            print("clicked=True")
-            state = 1
-
-def tutorialState():
-    screen.fill((255, 50, 0))
-
-def tutorialStateInput(event):
-    pass
-
-#Main Functions~~~~~~~
-
-def render():
-    if state == 0:
-        menuState()
-    if state == 1:
-        tutorialState()
-
-def handleInput(event):
-    if state == 0:
-        menuStateInput(event)
-    if state == 1:
-        tutorialStateInput(event)
-
-
-
-#Mechanics Functions~~~~~~~
-
-class Text():
-    def __init__(self, t, s=int(WIDTH/11), color=txtCol, underlineCol=col1, centerX=True, x=0, y=0, centerY=False):
-        font = pygame.font.Font('font.ttf', int(s), bold=False, italic=False)
-        self.text = font.render(t, True, color)
-        self.x = x
-        self.y = y
-        
-        self.underlineCol = underlineCol
-        if centerX:
-            self.x = WIDTH/2 - self.text.get_width()/2
-        else:
-            self.x -= self.text.get_width()/2
-        if centerY:
-            self.y -= self.text.get_height()/2
-            pass
-
-        print("yee")
-        print(self.y)
-        print(y)
-
-        screen.blit(self.text, (self.x, self.y))
-
-    
-    def underline(self, dist = HEIGHT/50, wid = HEIGHT/70):
-        pygame.draw.line(screen, self.underlineCol, (self.x + dist, self.y + self.text.get_height() + dist), (self.x + self.text.get_width() - dist, self.y + self.text.get_height() + dist), int(wid))
-
-class Button():
-    def __init__(self, rect, textLbl, textSize, col1, col2, txtCol, rad):
-        self.x = rect.x
-        self.y = rect.y
-        self.width = rect.width
-        self.height = rect.height
-        c1 = [col1[0], col1[1], col1[2]]
-        c2 = [col2[0], col2[1], col2[2]]
-        c3 = []
-        for i in range(int(self.height-rad)):
-            c1[0] += (c2[0] - c1[0])/(self.height-rad)
-            c1[1] += (c2[1] - c1[1])/(self.height-rad)
-            c1[2] += (c2[2] - c1[2])/(self.height-rad)
-            c3 = (c1[0], c1[1], c1[2])
-            pygame.draw.rect(screen, c3, pygame.Rect(self.x, self.y + i, self.width, rad),  int(rad/2), rad)
-
-        # print(self.x + self.width/2, self.y + self.height/2)
-        Text(textLbl, int(textSize), txtCol, centerX=True,  y=self.y, centerY=False)
-        # Text(textLbl, x=self.x, y=self.y)
-        pygame.draw.rect(screen, (0,0,0), pygame.Rect(self.x, self.y, self.width, self.height), 2)
-
-
-    def checkClick(self):
-        xPos, yPos = pygame.mouse.get_pos()
-        if xPos in range(self.x, self.x + self.width) and yPos in range(self.y, self.y + self.height):
-            return True
-        else:
-            return False
-
-
-#Run da coed~~~~~~
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        handleInput(event)
-    
-    WIDTH = screen.get_width()
-    HEIGHT = screen.get_height()
-    render()
-    
-    pygame.display.flip()
-    fpsClock.tick(FPS)
-
+screen: Surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+main()
 pygame.quit()
