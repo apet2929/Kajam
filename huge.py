@@ -8,6 +8,8 @@ from pygame.surface import Surface
 import pygame.freetype
 from pygame.font import *
 from pygame.sprite import RenderUpdates
+import pygame.image
+from os.path import join
 
 class GameState(Enum):
     QUIT = -1
@@ -70,9 +72,7 @@ def create_surface_with_text(text, font_size, text_rgb, bg_rgb=None) -> Surface:
     surface, _ = font.render(text=text, fgcolor=text_rgb, bgcolor=bg_rgb)
     return surface.convert_alpha()
 
-
-
-def game_loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:Surface=None):
+def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:Surface=None):
     # Handles game loop until an action is return by a button in the buttons sprite renderer.
     running = True
     while running:
@@ -144,17 +144,87 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
 
     return text
 
+def game(images):
+    running = True
+
+    while running:
+        print("yee")
+        
+        screen.fill((255,255,255))
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return GameState.QUIT
+            
+        screen.blit(images[0], (0,0))
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+def titleScreen(title_screen_img):
+    start_btn = UIElement(
+        center_position=(500, 400),
+        font_size=30,
+        bg_rgb=(0, 0, 255, 255),
+        text_rgb=(255, 255, 255),
+        text="Start",
+        action=GameState.NEWGAME
+    )
+
+    quit_btn = UIElement(
+        center_position=(500, 500),
+        font_size=30,
+        bg_rgb=(0, 0, 255),
+        text_rgb=(255, 255, 255),
+        text="Quit",
+        action=GameState.QUIT
+    )
+
+    title_text = UIElement(
+        center_position=(500, 250),
+        font_size=60,
+        bg_rgb=(0, 0, 255),
+        text_rgb=(255, 255, 255),
+        text="Kajam Game",
+        action=None
+    )
+
+    buttons = RenderUpdates(start_btn, quit_btn, title_text)
+
+    return loop(buttons, img=title_screen_img)
+
+def loadAssets():
+    images = [
+        pygame.image.load(join("assets", "temp.png"))
+    ]
+    return images
+
 def main():
     game_state = GameState.TITLE
     
-    if game_state == GameState.QUIT:
+    images = loadAssets()
+
+    running = True
+    while running:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_state = GameState.QUIT
+            
+
+        nextState = None
+        if game_state == GameState.QUIT:
             running = False
-
-    buttons = RenderUpdates(
-        UIElement((100,100), "Yee", 25, (0,0,255), (0,0,0), GameState.QUIT)
-    )
-
-    game_loop(buttons)
+        elif game_state == GameState.TITLE:
+            nextState = titleScreen(images[0])
+        elif game_state == GameState.CUTSCENE:
+            pass
+        elif game_state == GameState.NEWGAME:
+            nextState = game(images)
+        elif game_state == GameState.NEXT_LEVEL:
+            pass
+            
+        game_state = nextState
 
 
 #  Constant Variables
