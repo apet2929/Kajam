@@ -114,7 +114,8 @@ def titleScreen(title_screen_img):
 
 def loadAssets():
     images = [
-        pygame.image.load(join("assets", "temp.png"))
+        pygame.image.load(join("assets", "temp.png")),
+        pygame.image.load(join("assets", "mochi.png"))
     ]
     return images
 
