@@ -85,28 +85,28 @@ def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:
 
 def titleScreen(title_screen_img):
     start_btn = UIElement(
-        center_position=(500, 800),
+        center_position=(400, 300),
         font_size=30,
-        bg_rgb=(0, 0, 255, 255),
-        text_rgb=(255, 0, 255),
+        bg_rgb=(74, 78, 105),
+        text_rgb=(242, 233, 228),
         text="Start",
         action=GameState.NEWGAME
     )
 
     quit_btn = UIElement(
-        center_position=(500, 500),
+        center_position=(400, 400),
         font_size=30,
-        bg_rgb=(0, 0, 255),
-        text_rgb=(255, 255, 255),
+        bg_rgb=(74, 78, 105),
+        text_rgb=(242, 233, 228),
         text="Quit",
         action=GameState.QUIT
     )
 
     title_text = UIElement(
-        center_position=(500, 250),
+        center_position=(400, 150),
         font_size=60,
-        bg_rgb=(0, 0, 255),
-        text_rgb=(255, 255, 255),
+        bg_rgb=(154, 140, 152),
+        text_rgb=(242, 233, 228),
         text="Kajam Game",
         action=None
     )
@@ -125,9 +125,9 @@ def titleScreen(title_screen_img):
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 mouse_up = True
 
-        screen.fill((154, 140, 152)
+        screen.fill((154, 140, 152))
         
-        screen.blit(title_screen_img, (0, 0))
+        # screen.blit(title_screen_img, (0, 0))
 
         for button in buttons:
             ui_action = button.update(pygame.mouse.get_pos(), mouse_up)
