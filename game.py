@@ -14,6 +14,8 @@ import pygame.transform
 
 
 class Bullet(Sprite):
+
+    SPEED = 200
     # TODO: Have bullets rotate and point to the correct position
     def __init__(self, image: Surface, position: Vector2, velocity: Vector2) -> None:
         super().__init__()
@@ -29,6 +31,10 @@ class Bullet(Sprite):
         self.pos += self.velocity * delta
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
+
+        # Clamping position within bounds of screen
+        if (self.rect.top > SCREEN_HEIGHT) or (self.rect.left > SCREEN_WIDTH) or (self.rect.bottom < 0) or (self.rect.right < 0):
+            self.kill()
 
 # TODO: Have enemies follow bezier curve
 class Enemy(Sprite):
@@ -66,19 +72,14 @@ class Enemy(Sprite):
 
 
 
-def genBullet(bullets: Group, image: Surface):
+def genBullet(bullets: Group, image: Surface, sourcePos: Vector2):
     mousePos = pygame.mouse.get_pos()
 
     # Bullet calculations
-    bulletPos = Vector2(gameStateManager.SCREEN_WIDTH/2, gameStateManager.SCREEN_HEIGHT/2)
+    bulletVel = Vector2(mousePos[0], mousePos[1]) - sourcePos
+    bulletVel.scale_to_length(Bullet.SPEED)
     
-    bulletVel = Vector2(50,0)
-    bulletRot = bulletVel.angle_to(Vector2(mousePos[0], mousePos[1]))
-    print(bulletRot)
-    bulletVel = bulletVel.rotate(bulletRot)
-    print(bulletVel)
-    
-    bullet = Bullet(image, bulletPos, bulletVel)
+    bullet = Bullet(image, position=sourcePos, velocity=bulletVel)
     bullets.add(bullet)
 
 def mainGame(FPS, clock, screen, images):
@@ -99,7 +100,7 @@ def mainGame(FPS, clock, screen, images):
                 return GameState.QUIT
 
             if event.type == pygame.MOUSEBUTTONUP:
-                genBullet(bullets, images[0])
+                genBullet(bullets, images[0], Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
             
         # screen.blit(images[0], (0,0))
 

@@ -91,3 +91,6 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
         text = text[i:]
 
     return text
+
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 1000

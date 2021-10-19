@@ -13,6 +13,7 @@ import game
 from utils import *
 
 
+
 class UIElement(pygame.sprite.Sprite):
 
     def __init__(self, center_position, text, font_size, bg_rgb, text_rgb, action=None):
@@ -150,9 +151,6 @@ def main():
 
 
 #  Constant Variables
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 1000
-
 FPS = 60
 clock = pygame.time.Clock()
 
