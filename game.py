@@ -9,6 +9,7 @@ from os.path import join
 import pygame.mouse
 import gameStateManager
 import pygame.transform
+import pygame.sprite
 
 # This file is where the main game is going to be stored
 
@@ -25,7 +26,7 @@ class Bullet(Sprite):
         self.rect.x = position.x
         self.rect.y = position.y
         self.velocity = velocity
-
+        self.damage = 51
 
     def update(self, delta):
         self.pos += self.velocity * delta
@@ -35,6 +36,18 @@ class Bullet(Sprite):
         # Clamping position within bounds of screen
         if (self.rect.top > SCREEN_HEIGHT) or (self.rect.left > SCREEN_WIDTH) or (self.rect.bottom < 0) or (self.rect.right < 0):
             self.kill()
+    
+    def genBullet(bullets: Group, image: Surface, sourcePos: Vector2):
+        mousePos = pygame.mouse.get_pos()
+
+        # Bullet calculations
+        bulletVel = Vector2(mousePos[0], mousePos[1]) - sourcePos
+        bulletVel.scale_to_length(Bullet.SPEED)
+        
+        bullet = Bullet(image, position=sourcePos, velocity=bulletVel)
+        bullets.add(bullet)
+        return bullet
+
 
 # TODO: Have enemies follow bezier curve
 class Enemy(Sprite):
@@ -72,15 +85,6 @@ class Enemy(Sprite):
 
 
 
-def genBullet(bullets: Group, image: Surface, sourcePos: Vector2):
-    mousePos = pygame.mouse.get_pos()
-
-    # Bullet calculations
-    bulletVel = Vector2(mousePos[0], mousePos[1]) - sourcePos
-    bulletVel.scale_to_length(Bullet.SPEED)
-    
-    bullet = Bullet(image, position=sourcePos, velocity=bulletVel)
-    bullets.add(bullet)
 
 def mainGame(FPS, clock, screen, images):
     running = True
@@ -100,12 +104,25 @@ def mainGame(FPS, clock, screen, images):
                 return GameState.QUIT
 
             if event.type == pygame.MOUSEBUTTONUP:
-                genBullet(bullets, images[0], Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
+                # Creates a bullet and adds it to the bullet group
+                Bullet.genBullet(bullets, images[0], Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
             
         # screen.blit(images[0], (0,0))
 
         enemies.update(delta)
         bullets.update(delta)
+
+        # Enemy collision with bullets
+
+        collisions = pygame.sprite.groupcollide(enemies, bullets, False, True)
+        enemy: Enemy
+        for enemy in enemies:
+            try:
+                for bullet in collisions[enemy]:
+                    enemy.onCollision(bullet)
+            except KeyError:
+                # Enemy is not colliding with anything
+                pass
 
         bullets.draw(screen)
         enemies.draw(screen)
