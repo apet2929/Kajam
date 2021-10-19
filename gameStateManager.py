@@ -59,7 +59,7 @@ def titleScreen(title_screen_img):
         screen.fill((0, 0, 255))
         
         screen.blit(title_screen_img, (0, 0))
-
+        
         for button in buttons:
             ui_action = button.update(pygame.mouse.get_pos(), mouse_up)
             if ui_action is not None:
@@ -70,12 +70,23 @@ def titleScreen(title_screen_img):
         pygame.display.flip()
         clock.tick(FPS)
 
-
+def loadImage(fileName):
+    try:
+        image = pygame.image.load(join("assets", fileName))
+    except FileNotFoundError as e:
+        print(fileName + " does not exist!")
+        print(e)
+        return
+    return image
 def loadAssets():
-    images = [
-        pygame.image.load(join("assets", "temp.png")),
-        pygame.image.load(join("assets", "mochi.png"))
-    ]
+    images = {
+        "temp.png": loadImage("temp.png"),
+        "mochi.png": loadImage("mochi.png"),
+        "bullet1.jpg": loadImage("bullet1.jpg"),
+        "bullet2.png": loadImage("bullet2.png"),
+        "bullet3.jpg": loadImage("bullet3.jpg")
+    }
+    
     return images
 
 def main():
@@ -99,7 +110,7 @@ def main():
         if game_state == GameState.QUIT:
             running = False
         elif game_state == GameState.TITLE:
-            nextState = titleScreen(images[0])
+            nextState = titleScreen(images["temp.png"])
         elif game_state == GameState.CUTSCENE:
             pass
         elif game_state == GameState.NEWGAME:

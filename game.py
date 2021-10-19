@@ -86,15 +86,27 @@ class Bullet(Sprite):
     SPEED = 200
     bullets = Group()
     images = []
-    def __init__(self, image: Surface, position: Vector2, velocity: Vector2) -> None:
+    def __init__(self, type: int, position: Vector2, velocity: Vector2) -> None:
         super().__init__()
-        self.image = pygame.transform.scale(image, (50,50))
+        self.type = type
+        try:
+            self.image = Bullet.images[type]
+        except IndexError:
+            print("Bullet type" + str(type) + " does not exist!")
+            return
+        
+        self.image = pygame.transform.scale(self.image, (25,25))
         self.rect = self.image.get_rect()
         self.pos = position
         self.rect.centerx = position.x
         self.rect.centery = position.y
         self.velocity = velocity
-        self.damage = 51
+        if self.type == 0:
+            self.damage = 5
+        elif self.type == 1:
+            self.damage = 15
+        elif self.type == 2:
+            self.damage = 51
 
     def update(self, delta):
         self.pos += self.velocity * delta
@@ -105,18 +117,13 @@ class Bullet(Sprite):
         if (self.rect.top > SCREEN_HEIGHT) or (self.rect.left > SCREEN_WIDTH) or (self.rect.bottom < 0) or (self.rect.right < 0):
             self.kill()
     
-    def genBullet(image: Surface or int, sourcePos: Vector2, target: Vector2):
-        mousePos = pygame.mouse.get_pos()
+    def genBullet(type: int, sourcePos: Vector2, target: Vector2):
 
         # Bullet calculations
         bulletVel = target - sourcePos
         bulletVel.scale_to_length(Bullet.SPEED)
-        
-        if type(image) == int:
-            im = Bullet.images[image]
-        else:
-            im = image
-        bullet = Bullet(im, position=sourcePos, velocity=bulletVel)
+    
+        bullet = Bullet(type, position=sourcePos, velocity=bulletVel)
         Bullet.bullets.add(bullet)
 
         # Returns bullet just in case we need it, in most cases we don't
@@ -230,16 +237,20 @@ def mainGame(FPS, clock, screen, images):
 
     # Add test enemy
     Enemy.enemies.add()
-    Bullet.images.append(images[0]) 
+    Bullet.images.extend([
+        images["bullet1.jpg"],
+        images["bullet2.png"],
+        images["bullet3.jpg"]
+    ])
 
     # Add test tower
-    Tower.towers.add(Tower(images[1], (500,300)))
+    Tower.towers.add(Tower(images["mochi.png"], (500,300)))
 
     spawner = EnemySpawner(
         enemyList=[
-        Enemy(images[1], EnemyType.BASIC),
-        Enemy(images[1], EnemyType.BASIC),
-        Enemy(images[1], EnemyType.BASIC)
+            Enemy(images["mochi.png"], EnemyType.BASIC),
+            Enemy(images["mochi.png"], EnemyType.BASIC),
+            Enemy(images["mochi.png"], EnemyType.BASIC)
         ],
         delayList=[
             500, 2000, 50

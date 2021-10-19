@@ -125,5 +125,5 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
 
     return text
 
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 1000
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
