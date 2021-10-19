@@ -10,13 +10,71 @@ import pygame.mouse
 import gameStateManager
 import pygame.transform
 import pygame.sprite
+import pygame.time
 
 # This file is where the main game is going to be stored
+
+class Tower(Sprite):
+    towers = Group()
+    def __init__(self, image: Surface, position: tuple) -> None:
+        super().__init__()
+        self.image = pygame.transform.scale(image, (100,100))
+        self.rect = self.image.get_rect()
+        self.rect.x = position[0]
+        self.rect.y = position[1]
+
+        # Radius of the targetting range circle
+        self.rangeRadius: int = 100
+        
+        # Attack cooldown - time between shooting bullets in seconds
+        # Doesn't change, this is constant
+        self.cooldown: int = 2
+        self.cooldownCounter = 0
+        self.inCooldown: bool = False
+
+    def update(self, delta):
+        if self.inCooldown:
+            self.cooldownCounter += delta
+            if self.cooldownCounter > self.cooldown:
+                # Cooldown ended
+                self.cooldownCounter = 0
+                self.inCooldown = False
+                
+        else:
+            # Shoot bullet
+            if self.shootBullet():
+                self.inCooldown = True
+
+    def shootBullet(self):
+        selfPos = Vector2(self.rect.x, self.rect.y)
+
+        # Get closest enemy
+        closest = None
+        closestDistance = None
+
+        enemy: Enemy
+        for enemy in Enemy.enemies.sprites():
+            
+            enemyPos = Vector2(enemy.rect.centerx, enemy.rect.centery)
+            if closest:  
+                if enemyPos.distance_to(selfPos) < closestDistance:
+                    closest = enemy
+                    closestDistance = enemyPos.distance_to(selfPos)
+            else:
+                closest = enemy
+                closestDistance = enemyPos.distance_to(selfPos)
+
+        if not closest:
+            return False
+        Bullet.genBullet(0, Vector2(self.rect.x, self.rect.y), target=Vector2(closest.rect.x, closest.rect.y))
+        return True
 
 
 class Bullet(Sprite):
 
     SPEED = 200
+    bullets = Group()
+    images = []
     # TODO: Have bullets rotate and point to the correct position
     def __init__(self, image: Surface, position: Vector2, velocity: Vector2) -> None:
         super().__init__()
@@ -37,15 +95,21 @@ class Bullet(Sprite):
         if (self.rect.top > SCREEN_HEIGHT) or (self.rect.left > SCREEN_WIDTH) or (self.rect.bottom < 0) or (self.rect.right < 0):
             self.kill()
     
-    def genBullet(bullets: Group, image: Surface, sourcePos: Vector2):
+    def genBullet(image: Surface or int, sourcePos: Vector2, target: Vector2):
         mousePos = pygame.mouse.get_pos()
 
         # Bullet calculations
-        bulletVel = Vector2(mousePos[0], mousePos[1]) - sourcePos
+        bulletVel = target - sourcePos
         bulletVel.scale_to_length(Bullet.SPEED)
         
-        bullet = Bullet(image, position=sourcePos, velocity=bulletVel)
-        bullets.add(bullet)
+        if type(image) == int:
+            im = Bullet.images[image]
+        else:
+            im = image
+        bullet = Bullet(im, position=sourcePos, velocity=bulletVel)
+        Bullet.bullets.add(bullet)
+
+        # Returns bullet just in case we need it, in most cases we don't
         return bullet
 
 
@@ -64,6 +128,16 @@ class Enemy(pygame.sprite.Sprite):
         self.goingUp = True
 
         self.pos = Vector2(point1[0], point1[1])
+class Enemy(Sprite):
+    enemies = Group()
+    def __init__(self, image):
+        super().__init__()
+        self.image = image
+        self.rect = Rect(200,0,50,50)
+
+        # I have to use a separate positon vector2 because rect tracks using ints which won't be good enough for the level 
+        # Of precision we need
+        self.pos = Vector2(0,0)
         self.time_alive = 0
         self.health = 100
         self.damage = 101
@@ -106,12 +180,10 @@ class Enemy(pygame.sprite.Sprite):
 
 def mainGame(FPS, clock, screen, images):
     running = True
-
-    enemyImage = load(join("assets", "mochi.png"))
-    enemies = Group()
-    bullets = Group()
-    enemies.add(Enemy(enemyImage))
-
+    
+    Enemy.enemies.add(Enemy(images[1]))
+    Bullet.images.append(images[0]) 
+    Tower.towers.add(Tower(images[1], (500,300)))
 
     while running:
         delta = clock.tick(FPS) / 1000
@@ -123,18 +195,19 @@ def mainGame(FPS, clock, screen, images):
 
             if event.type == pygame.MOUSEBUTTONUP:
                 # Creates a bullet and adds it to the bullet group
-                Bullet.genBullet(bullets, images[0], Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
+                mouseX, mouseY = pygame.mouse.get_pos()
+                Bullet.genBullet(images[0], Vector2(SCREEN_WIDTH/2, SCREEN_HEIGHT/2), Vector2(mouseX, mouseY))
             
         # screen.blit(images[0], (0,0))
-
-        enemies.update(delta)
-        bullets.update(delta)
+        Tower.towers.update(delta)
+        Enemy.enemies.update(delta)
+        Bullet.bullets.update(delta)
 
         # Enemy collision with bullets
 
-        collisions = pygame.sprite.groupcollide(enemies, bullets, False, True)
+        collisions = pygame.sprite.groupcollide(Enemy.enemies, Bullet.bullets, False, True)
         enemy: Enemy
-        for enemy in enemies:
+        for enemy in Enemy.enemies:
             try:
                 for bullet in collisions[enemy]:
                     enemy.onCollision(bullet)
@@ -142,10 +215,12 @@ def mainGame(FPS, clock, screen, images):
                 # Enemy is not colliding with anything
                 pass
 
-        bullets.draw(screen)
-        enemies.draw(screen)
+        Bullet.bullets.draw(screen)
+        Enemy.enemies.draw(screen)
+        Tower.towers.draw(screen)
 
         pygame.display.flip()
+    
 
     return GameState.QUIT
 
