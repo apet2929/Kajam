@@ -1,26 +1,14 @@
 import pygame
-from enum import Enum
 import pygame.rect
 from pygame.rect import Rect
 import pygame.event
 import pygame.draw
 from pygame.surface import Surface
-import pygame.freetype
-from pygame.font import *
 from pygame.sprite import RenderUpdates
 import pygame.image
 from os.path import join
-
-class GameState(Enum):
-    QUIT = -1
-    TITLE = 0
-    NEWGAME = 1
-    NEXT_LEVEL = 2
-    CUTSCENE = 3
-    NEXT_LINE = 4
-    RETURN = 5
-    MAP = 6
-
+import game
+from utils import *
 
 class UIElement(pygame.sprite.Sprite):
 
@@ -58,20 +46,6 @@ class UIElement(pygame.sprite.Sprite):
         else:
             self.mouse_over = False
 
-
-def clamp(value, min, max):
-    if value < min:
-        return min
-    elif value > max:
-        return max
-    else:
-        return value
-
-def create_surface_with_text(text, font_size, text_rgb, bg_rgb=None) -> Surface:
-    font = pygame.freetype.SysFont("Courier", font_size, bold=True)
-    surface, _ = font.render(text=text, fgcolor=text_rgb, bgcolor=bg_rgb)
-    return surface.convert_alpha()
-
 def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:Surface=None):
     # Handles game loop until an action is return by a button in the buttons sprite renderer.
     running = True
@@ -98,65 +72,6 @@ def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:
         if text is not None and pos is not None:
             drawText(screen, text, (0,0,255), pos, font, True)
     
-
-        pygame.display.flip()
-        clock.tick(FPS)
-
-
-# draw some text into an area of a surface
-# automatically wraps words
-# returns any text that didn't get blitted
-def drawText(surface, text, color, rect, font, aa=False, bkg=None):
-    rect = Rect(rect)
-    y = rect.top
-    lineSpacing = -2
-
-    # get the height of the font
-    fontHeight = font.size("Tg")[1]
-
-    while text:
-        i = 1
-
-        # determine if the row of text will be outside our area
-        if y + fontHeight > rect.bottom:
-            break
-
-        # determine maximum width of line
-        while font.size(text[:i])[0] < rect.width and i < len(text):
-            i += 1
-
-        # if we've wrapped the text, then adjust the wrap to the last word      
-        if i < len(text): 
-            i = text.rfind(" ", 0, i) + 1
-
-        # render the line and blit it to the surface
-        if bkg:
-            image = font.render(text[:i], 1, color, bkg)
-            image.set_colorkey(bkg)
-        else:
-            image = font.render(text[:i], aa, color)
-
-        surface.blit(image, (rect.left, y))
-        y += fontHeight + lineSpacing
-
-        # remove the text we just blitted
-        text = text[i:]
-
-    return text
-
-def game(images):
-    running = True
-
-    while running:
-        print("yee")
-        
-        screen.fill((255,255,255))
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return GameState.QUIT
-            
-        screen.blit(images[0], (0,0))
 
         pygame.display.flip()
         clock.tick(FPS)
@@ -220,7 +135,7 @@ def main():
         elif game_state == GameState.CUTSCENE:
             pass
         elif game_state == GameState.NEWGAME:
-            nextState = game(images)
+            nextState = game.mainGame(FPS, clock, screen, images)
         elif game_state == GameState.NEXT_LEVEL:
             pass
             
