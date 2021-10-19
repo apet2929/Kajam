@@ -50,7 +50,7 @@ class UIElement(pygame.sprite.Sprite):
         else:
             self.mouse_over = False
 
-def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:Surface=None):
+def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:Surface=None, bg_col:tuple=None):
     # Handles game loop until an action is return by a button in the buttons sprite renderer.
     running = True
     while running:
@@ -62,7 +62,7 @@ def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 mouse_up = True
 
-        screen.fill((0, 0, 255))
+        screen.fill(bg_col)
         if img is not None:
             screen.blit(img, (0, 0))
 
@@ -110,7 +110,7 @@ def titleScreen(title_screen_img):
 
     buttons = RenderUpdates(start_btn, quit_btn, title_text)
 
-    return loop(buttons, img=title_screen_img)
+    return loop(buttons, bg_col=(154, 140, 152))
 
 def loadAssets():
     images = [
@@ -156,6 +156,6 @@ FPS = 60
 clock = pygame.time.Clock()
 
 pygame.init()
-screen: Surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen: Surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
 main()
 pygame.quit()
