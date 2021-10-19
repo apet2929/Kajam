@@ -1,4 +1,5 @@
 import pygame
+from pygame.constants import SHOWN
 from pygame.math import Vector2
 from pygame.sprite import Group, Sprite
 import pygame.draw
@@ -7,7 +8,6 @@ from utils import *
 from pygame.image import load
 from os.path import join
 import pygame.mouse
-import gameStateManager
 import pygame.transform
 import pygame.sprite
 import pygame.time
@@ -24,7 +24,7 @@ class Tower(Sprite):
         self.rect.y = position[1]
 
         # Radius of the targetting range circle
-        self.rangeRadius: int = 100
+        self.rangeRadius: int = 1000
         
         # Attack cooldown - time between shooting bullets in seconds
         # Doesn't change, this is constant
@@ -46,6 +46,9 @@ class Tower(Sprite):
                 self.inCooldown = True
 
     def shootBullet(self):
+        if len(Enemy.enemies.sprites()) == 0:
+            return False
+
         selfPos = Vector2(self.rect.x, self.rect.y)
 
         # Get closest enemy
@@ -64,9 +67,12 @@ class Tower(Sprite):
                 closest = enemy
                 closestDistance = enemyPos.distance_to(selfPos)
 
-        if not closest:
+        if closestDistance > self.rangeRadius:
+            # Enemy isn't within tower's range
             return False
-        Bullet.genBullet(0, Vector2(self.rect.x, self.rect.y), target=Vector2(closest.rect.x, closest.rect.y))
+
+        # Shoots bullet
+        Bullet.genBullet(0, Vector2(self.rect.centerx, self.rect.centery), target=Vector2(closest.rect.x, closest.rect.y))
         return True
 
 
@@ -75,14 +81,13 @@ class Bullet(Sprite):
     SPEED = 200
     bullets = Group()
     images = []
-    # TODO: Have bullets rotate and point to the correct position
     def __init__(self, image: Surface, position: Vector2, velocity: Vector2) -> None:
         super().__init__()
         self.image = pygame.transform.scale(image, (50,50))
         self.rect = self.image.get_rect()
         self.pos = position
-        self.rect.x = position.x
-        self.rect.y = position.y
+        self.rect.centerx = position.x
+        self.rect.centery = position.y
         self.velocity = velocity
         self.damage = 51
 
@@ -114,66 +119,45 @@ class Bullet(Sprite):
 
 
 # TODO: Have enemies follow bezier curve
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self, image, point1, point2, point3, point4, time): #points are tuples
-        #andrew pls help i still dont know how to do time
+class Enemy(Sprite):
+    enemies = Group()
+    path = list[Vector2] #  The path the enemies will follow
+    def __init__(self, image): 
         super().__init__()
         self.image = image
         self.rect = image.get_rect()
-        self.p1 = Vector2(point1[0], point1[1])
-        self.p2 = Vector2(point2[0], point2[1])
-        self.p3 = Vector2(point3[0], point3[1])
-        self.p4 = Vector2(point4[0], point4[1])
-        self.t = 0
-        self.goingUp = True
-
-        self.pos = Vector2(point1[0], point1[1])
-class Enemy(Sprite):
-    enemies = Group()
-    def __init__(self, image):
-        super().__init__()
-        self.image = image
-        self.rect = Rect(200,0,50,50)
-
-        # I have to use a separate positon vector2 because rect tracks using ints which won't be good enough for the level 
-        # Of precision we need
-        self.pos = Vector2(0,0)
+        self.rect.x = Enemy.path[0].x
+        self.rect.y = Enemy.path[1].y
         self.time_alive = 0
         self.health = 100
-        self.damage = 101
 
-    def update(self): #, delta
+        # After how long will the enemy reach the end of the path
+        self.max_time = 10
+
+    def update(self, delta):
         """
         Enemy position is updated based on delta
         Enemy position is CONSISTENT- give 2 enemies the same time alive, and they will have the same position
         Delta represents the change in time between frames in seconds- usually a number less than 0
         """
-        self.pos = (1-self.t/100)**3 * self.p1 + 3*(1-self.t/100)**2 * self.t/100 * self.p2 + 3 * (1-self.t/100) * (self.t/100)**2 * self.p3 + (self.t/100)**3 * self.p4
 
-        # self.time_alive += delta
-        # self.pos += Vector2(50 * delta, 50 * delta)
-        self.rect.x = self.pos.x
-        self.rect.y = self.pos.y
-        if self.goingUp:
-            self.t += 1
-        
-        if self.goingUp == False:
-            self.t -= 1
-        
-        if self.t >= 100:
-            self.goingUp = False
-        if self.t <= 0:
-            self.goingUp = True
+        self.time_alive += delta
+        if self.time_alive > self.max_time:
+            # Deal damage to player
+            print("Hit end of path")
+            self.kill()
+
+        pos = (1-self.time_alive/self.max_time)**3 * Enemy.path[0] + 3*(1-self.time_alive/self.max_time)**2 * self.time_alive/self.max_time * Enemy.path[1] + 3 * (1-self.time_alive/self.max_time) * (self.time_alive/self.max_time)**2 * Enemy.path[2] + (self.time_alive/self.max_time)**3 * Enemy.path[3]
+        self.rect.x = pos.x
+        self.rect.y = pos.y
 
 
-    # def onCollision(self, bullet: Bullet):
-    #     self.health -= bullet.damage
-    #     if self.health < 0:
-    #         self.kill()
-    #         print("Oof I ded")
-    #     bullet.kill()
-    def render(self):
-        screen.blit(self.image, (self.pos.x, self.pos.y))
+    def onCollision(self, bullet: Bullet):
+        self.health -= bullet.damage
+        if self.health < 0:
+            self.kill()
+            print("Oof I ded")
+        bullet.kill()
 
 
 
@@ -181,6 +165,13 @@ class Enemy(Sprite):
 def mainGame(FPS, clock, screen, images):
     running = True
     
+    mapPath = [
+        Vector2(0,0),
+        Vector2(SCREEN_WIDTH*0.8, SCREEN_HEIGHT*0.2),
+        Vector2(SCREEN_WIDTH*0.2, SCREEN_HEIGHT * 0.8),
+        Vector2(SCREEN_WIDTH, SCREEN_HEIGHT)
+    ]
+    Enemy.path = mapPath
     Enemy.enemies.add(Enemy(images[1]))
     Bullet.images.append(images[0]) 
     Tower.towers.add(Tower(images[1], (500,300)))

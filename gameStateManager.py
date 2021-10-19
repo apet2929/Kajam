@@ -82,10 +82,10 @@ def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:
 
 def titleScreen(title_screen_img):
     start_btn = UIElement(
-        center_position=(500, 400),
+        center_position=(500, 800),
         font_size=30,
         bg_rgb=(0, 0, 255, 255),
-        text_rgb=(255, 255, 255),
+        text_rgb=(255, 0, 255),
         text="Start",
         action=GameState.NEWGAME
     )

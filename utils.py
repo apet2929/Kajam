@@ -2,6 +2,7 @@ import pygame
 from pygame.surface import Surface
 from pygame.rect import Rect
 from enum import Enum
+import pygame.font
 """
 Utils is a file made to contain utility functions used in multiple files,
 For the purpose of saving me from cluttering up or having to rewrite the functions
@@ -46,8 +47,8 @@ def create_surface_with_text(text, font_size, text_rgb, bg_rgb=None) -> Surface:
     Creates a font and renders text, returns the surface blitted to
     TODO: Change the font from sysfont to font.ttf
     """
-    font = pygame.font.Font("font.ttf", font_size, bold=True)
-    surface, _ = font.render(text, False, False)
+    font = pygame.font.Font("font.ttf", int(font_size), bold=True)
+    surface = font.render(text, False, False)
     return surface.convert_alpha()
 
 
