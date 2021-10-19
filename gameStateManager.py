@@ -4,11 +4,14 @@ from pygame.rect import Rect
 import pygame.event
 import pygame.draw
 from pygame.surface import Surface
+import pygame.freetype
+from pygame.font import *
 from pygame.sprite import RenderUpdates
 import pygame.image
 from os.path import join
 import game
 from utils import *
+
 
 class UIElement(pygame.sprite.Sprite):
 
