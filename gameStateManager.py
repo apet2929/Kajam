@@ -79,6 +79,9 @@ def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:
 
         pygame.display.flip()
         clock.tick(FPS)
+def loop(buttons: list[UIElement], text:str=None, font:Font=None, pos=None, img:Surface=None):
+    # Handles game loop until an action is return by a button in the buttons sprite renderer.
+    pass
 
 def titleScreen(title_screen_img):
     start_btn = UIElement(
@@ -110,7 +113,32 @@ def titleScreen(title_screen_img):
 
     buttons = RenderUpdates(start_btn, quit_btn, title_text)
 
-    return loop(buttons, bg_col=(154, 140, 152))
+    # return loop(buttons, bg_col=(154, 140, 152))
+
+    running = True
+    while running:
+        mouse_up = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return GameState.QUIT
+
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                mouse_up = True
+
+        screen.fill((154, 140, 152)
+        
+        screen.blit(title_screen_img, (0, 0))
+
+        for button in buttons:
+            ui_action = button.update(pygame.mouse.get_pos(), mouse_up)
+            if ui_action is not None:
+                return ui_action
+
+        buttons.draw(screen)
+    
+        pygame.display.flip()
+        clock.tick(FPS)
+
 
 def loadAssets():
     images = [
