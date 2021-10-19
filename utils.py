@@ -48,7 +48,7 @@ def create_surface_with_text(text, font_size, text_rgb, bg_rgb=None) -> Surface:
     TODO: Change the font from sysfont to font.ttf
     """
     font = pygame.font.Font("font.ttf", int(font_size), bold=True)
-    surface = font.render(text, False, False)
+    surface = font.render(text, False, text_rgb, bg_rgb)
     return surface.convert_alpha()
 
 
