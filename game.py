@@ -146,8 +146,6 @@ def mainGame(FPS, clock, screen, images):
         enemies.draw(screen)
 
         pygame.display.flip()
-        
-
 
     return GameState.QUIT
 
