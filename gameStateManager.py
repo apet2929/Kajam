@@ -120,6 +120,10 @@ def loadAssets():
 def main():
     game_state = GameState.TITLE
     
+    # Images will get passed to gamme.py
+    # Supplying its assets to it 
+    # For simplicity sake they will be loaded on compilation
+
     images = loadAssets()
 
     running = True

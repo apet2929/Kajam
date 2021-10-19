@@ -6,8 +6,29 @@ import pygame.surface
 from utils import *
 from pygame.image import load
 from os.path import join
+import pygame.mouse
+import gameStateManager
+import pygame.transform
 
 # This file is where the main game is going to be stored
+
+
+class Bullet(Sprite):
+    # TODO: Have bullets rotate and point to the correct position
+    def __init__(self, image: Surface, position: Vector2, velocity: Vector2) -> None:
+        super().__init__()
+        self.image = pygame.transform.scale(image, (50,50))
+        self.rect = self.image.get_rect()
+        self.pos = position
+        self.rect.x = position.x
+        self.rect.y = position.y
+        self.velocity = velocity
+
+
+    def update(self, delta):
+        self.pos += self.velocity * delta
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.y
 
 # TODO: Have enemies follow bezier curve
 class Enemy(Sprite):
@@ -20,6 +41,8 @@ class Enemy(Sprite):
         # Of precision we need
         self.pos = Vector2(0,0)
         self.time_alive = 0
+        self.health = 100
+        self.damage = 101
 
     def update(self, delta):
         """
@@ -34,11 +57,36 @@ class Enemy(Sprite):
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
 
+    def onCollision(self, bullet: Bullet):
+        self.health -= bullet.damage
+        if self.health < 0:
+            self.kill()
+            print("Oof I ded")
+        bullet.kill()
+
+
+
+def genBullet(bullets: Group, image: Surface):
+    mousePos = pygame.mouse.get_pos()
+
+    # Bullet calculations
+    bulletPos = Vector2(gameStateManager.SCREEN_WIDTH/2, gameStateManager.SCREEN_HEIGHT/2)
+    
+    bulletVel = Vector2(50,0)
+    bulletRot = bulletVel.angle_to(Vector2(mousePos[0], mousePos[1]))
+    print(bulletRot)
+    bulletVel = bulletVel.rotate(bulletRot)
+    print(bulletVel)
+    
+    bullet = Bullet(image, bulletPos, bulletVel)
+    bullets.add(bullet)
+
 def mainGame(FPS, clock, screen, images):
     running = True
 
     enemyImage = load(join("assets", "mochi.png"))
     enemies = Group()
+    bullets = Group()
     enemies.add(Enemy(enemyImage))
 
 
@@ -49,11 +97,16 @@ def mainGame(FPS, clock, screen, images):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return GameState.QUIT
+
+            if event.type == pygame.MOUSEBUTTONUP:
+                genBullet(bullets, images[0])
             
         # screen.blit(images[0], (0,0))
 
         enemies.update(delta)
+        bullets.update(delta)
 
+        bullets.draw(screen)
         enemies.draw(screen)
 
         pygame.display.flip()

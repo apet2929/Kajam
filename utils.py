@@ -29,6 +29,17 @@ def clamp(value, min, max):
     else:
         return value
 
+class Button():
+    def __init__(self, x: float, y: float, image: pygame.Surface):
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.clicked = False
+
+    def render(self, screen: Surface):
+        screen.blit(self.image, self.rect)
+
 
 def create_surface_with_text(text, font_size, text_rgb, bg_rgb=None) -> Surface:
     """
