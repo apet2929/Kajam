@@ -50,38 +50,56 @@ class Bullet(Sprite):
 
 
 # TODO: Have enemies follow bezier curve
-class Enemy(Sprite):
-    def __init__(self, image):
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, image, point1, point2, point3, point4, time): #points are tuples
+        #andrew pls help i still dont know how to do time
         super().__init__()
         self.image = image
-        self.rect = Rect(0,0,50,50)
+        self.rect = image.get_rect()
+        self.p1 = Vector2(point1[0], point1[1])
+        self.p2 = Vector2(point2[0], point2[1])
+        self.p3 = Vector2(point3[0], point3[1])
+        self.p4 = Vector2(point4[0], point4[1])
+        self.t = 0
+        self.goingUp = True
 
-        # I have to use a separate positon vector2 because rect tracks using ints which won't be good enough for the level 
-        # Of precision we need
-        self.pos = Vector2(0,0)
+        self.pos = Vector2(point1[0], point1[1])
         self.time_alive = 0
         self.health = 100
         self.damage = 101
 
-    def update(self, delta):
+    def update(self): #, delta
         """
         Enemy position is updated based on delta
         Enemy position is CONSISTENT- give 2 enemies the same time alive, and they will have the same position
         Delta represents the change in time between frames in seconds- usually a number less than 0
         """
-        self.time_alive += delta
-        
-        self.pos += Vector2(50 * delta, 50 * delta)
+        self.pos = (1-self.t/100)**3 * self.p1 + 3*(1-self.t/100)**2 * self.t/100 * self.p2 + 3 * (1-self.t/100) * (self.t/100)**2 * self.p3 + (self.t/100)**3 * self.p4
 
+        # self.time_alive += delta
+        # self.pos += Vector2(50 * delta, 50 * delta)
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
+        if self.goingUp:
+            self.t += 1
+        
+        if self.goingUp == False:
+            self.t -= 1
+        
+        if self.t >= 100:
+            self.goingUp = False
+        if self.t <= 0:
+            self.goingUp = True
 
-    def onCollision(self, bullet: Bullet):
-        self.health -= bullet.damage
-        if self.health < 0:
-            self.kill()
-            print("Oof I ded")
-        bullet.kill()
+
+    # def onCollision(self, bullet: Bullet):
+    #     self.health -= bullet.damage
+    #     if self.health < 0:
+    #         self.kill()
+    #         print("Oof I ded")
+    #     bullet.kill()
+    def render(self):
+        screen.blit(self.image, (self.pos.x, self.pos.y))
 
 
 
